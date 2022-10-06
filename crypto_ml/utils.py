@@ -153,3 +153,26 @@ def signal_buy(
     print(df.groupby(['signal_buy']).count())
 
     return df
+
+
+def confusion_matrix(y_test_classes, y_hat_classes):
+    true_pos = 0
+    true_neg = 0
+    false_pos = 0
+    false_neg = 0
+
+    for i in range(len(y_hat_classes)):
+        if y_hat_classes[i] == 1 and y_test_classes[i] == 1:
+            true_pos += 1
+        elif y_hat_classes[i] == 0 and y_test_classes[i] == 0:
+            true_neg += 1
+        elif y_hat_classes[i] == 1 and y_test_classes[i] == 0:
+            false_pos += 1
+        elif y_hat_classes[i] == 0 and y_test_classes[i] == 1:
+            false_neg += 1
+
+    print("true_pos", true_pos)
+    print("true_neg", true_neg)
+    print("false_pos", false_pos)
+    print("false_neg", false_neg)
+    return true_pos, true_neg, false_pos, false_neg
