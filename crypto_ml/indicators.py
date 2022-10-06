@@ -6,13 +6,12 @@ from ta.volatility import BollingerBands
 from ta.momentum import RSIIndicator
 from ta.trend import EMAIndicator, PSARIndicator, MACD
 
+import crypto_ml
+
 
 def add_indicators_BollingerBands(
-    df, col_names=None, window=21, window_dev=2, ones_reverse=False
+    df, col_names=crypto_ml.col_names, window=21, window_dev=2, ones_reverse=False
 ):
-    if col_names is None:
-        col_names = col_names
-
     indicator_bb = BollingerBands(
         close=df[col_names["close"]], window=window, window_dev=window_dev
     )
@@ -41,9 +40,7 @@ def add_indicators_BollingerBands(
     return df
 
 
-def add_indicators_RSIIndicator(df, col_names=None, window=6, ones_reverse=False):
-    if col_names is None:
-        col_names = col_names
+def add_indicators_RSIIndicator(df, col_names=crypto_ml.col_names, window=6, ones_reverse=False):
     df["rsi_{}_".format(window)] = (
         RSIIndicator(close=df[col_names["close"]], window=window).rsi().round(2)
     )
@@ -57,10 +54,7 @@ def add_indicators_RSIIndicator(df, col_names=None, window=6, ones_reverse=False
     return df
 
 
-def add_indicators_EMAIndicator(df, col_names=None, w1=7, w2=25, w3=99, extra=None):
-    if col_names is None:
-        col_names = col_names
-
+def add_indicators_EMAIndicator(df, col_names=crypto_ml.col_names, w1=7, w2=25, w3=99, extra=None):
     df["ema_{}_".format(w1)] = (
         EMAIndicator(close=df[col_names["close"]], window=w1).ema_indicator().round(2)
     )
@@ -116,11 +110,8 @@ def add_indicators_EMAIndicator(df, col_names=None, w1=7, w2=25, w3=99, extra=No
 
 
 def add_indicators_MACDIndcator(
-    df, col_names=None, window_slow=26, window_fast=12, window_sign=9
+    df, col_names=crypto_ml.col_names, window_slow=26, window_fast=12, window_sign=9
 ):
-    if col_names is None:
-        col_names = col_names
-
     MACDIndcator = MACD(
         close=df[col_names["close"]],
         window_slow=window_slow,
@@ -134,10 +125,7 @@ def add_indicators_MACDIndcator(
     return df
 
 
-def add_indicators_PSARIndicator(df, col_names=None):
-    if col_names is None:
-        col_names = col_names
-
+def add_indicators_PSARIndicator(df, col_names=crypto_ml.col_names):
     df["sar"] = (
         PSARIndicator(
             high=df[col_names["high"]],
@@ -158,10 +146,7 @@ def add_indicators_PSARIndicator(df, col_names=None):
     return df
 
 
-def add_indicators_hour_percent_profit(df, col_names=None):
-    if col_names is None:
-        col_names = col_names
-
+def add_indicators_hour_percent_profit(df, col_names=crypto_ml.col_names):
     df["hour_percent_profit"] = df.apply(
         lambda row: (row[col_names["close"]] - row[col_names["open"]])
         / row[col_names["open"]],
@@ -171,10 +156,7 @@ def add_indicators_hour_percent_profit(df, col_names=None):
     return df
 
 
-def add_indicators_candle(df, col_names=None):
-    if col_names is None:
-        col_names = col_names
-
+def add_indicators_candle(df, col_names=crypto_ml.col_names):
     df["candle"] = df.apply(
         lambda row: (row[col_names["close"]] - row[col_names["open"]])
         / (row[col_names["high"]] - row[col_names["low"]])
