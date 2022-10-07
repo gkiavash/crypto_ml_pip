@@ -65,12 +65,12 @@ def split_sequence(sequence, n_steps_in, n_steps_out):
     return np.array(X), np.array(y)
 
 
-def split_series(series, n_past, n_future, col_output):
+def split_series(series, n_past, n_future, col_output=None):
     """
     :param series: dataset
     :param n_past: number of input steps, e.g. 3: consider 3 previous hours
     :param n_future: number of output steps, e.g. 1: next 1 hours
-    :param col_output: index of output column(s) must be iterable
+    :param col_output: index of output column(s) must be iterable. If None then the whole row
     :return: x, y. output for example above:
 
     x:              y:
@@ -92,7 +92,7 @@ def split_series(series, n_past, n_future, col_output):
         # slicing the past and future parts of the window
         past, future = series[window_start:past_end, :], series[past_end:future_end, :]
         X.append(past)
-        y.append(future[:, col_output])
+        y.append(future[:, col_output] if col_output is not None else future)
     return np.array(X), np.array(y)
 
 

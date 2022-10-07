@@ -1,10 +1,10 @@
+import numpy as np
+
 import crypto_ml
 from crypto_ml.utils import *
 
 
 def test_split_sequence():
-    import numpy as np
-
     d = [1, 2, 3, 4, 5, 6, 7, 8, 9]
     df = np.array(d)
     split_sequence(df, 5, 2)
@@ -12,8 +12,6 @@ def test_split_sequence():
 
 
 def test_split_series():
-    import numpy as np
-
     d = [
         [1, 11, 111],
         [2, 22, 222],
@@ -26,6 +24,17 @@ def test_split_series():
     ]
     df = np.array(d)
     x, y = split_series(df, n_past=3, n_future=1, col_output=(0,))
+    for i in range(len(x)):
+        print(x[i], y[i])
+
+
+def test_split_series_unix():
+    from crypto_ml.utils import split_series
+    import pandas as pd
+    df = pd.read_csv("tests/test.csv", header=0, delimiter=",")
+    print(df.values)
+    x, y = split_series(df.values, n_past=3, n_future=1, col_output=None)
+    print(x, y)
     for i in range(len(x)):
         print(x[i], y[i])
 
