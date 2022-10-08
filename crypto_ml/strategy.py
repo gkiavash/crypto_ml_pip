@@ -59,16 +59,15 @@ class TestStrategy:
         )
         print(f'Bought {btc_qty} BTC with price {btc_price}')
 
-    def btc_sell(self, position):
-        btc_price = position['btc_price']
+    def btc_sell(self, position, btc_price_cell):
         btc_qty = position['btc_qty']
         if self.wallet_btc - btc_qty < -0.001:
             raise Exception('Not enough BTC')
 
         self.wallet_btc -= btc_qty
-        self.wallet_usdt += ((btc_qty * btc_price) * (1 - self.rate_fee_transaction))
-        position["btc_price_cell"] = btc_price
-        print(f'Sold {btc_qty} BTC with price {btc_price}')
+        self.wallet_usdt += ((btc_qty * btc_price_cell) * (1 - self.rate_fee_transaction))
+        position["btc_price_cell"] = btc_price_cell
+        print(f'Sold {btc_qty} BTC with price {btc_price_cell}')
 
     def positions_check(self, btc_price):
         for index, position in enumerate(self.positions):
@@ -76,7 +75,7 @@ class TestStrategy:
                 continue
             if utils.percent_calc(btc_price, position['btc_price']) >= self.rate_sell_profit \
                 or utils.percent_calc(btc_price, position['btc_price']) < (self.rate_stop_limit - 2 * self.rate_fee_transaction):
-                self.btc_sell(position)
+                self.btc_sell(position, btc_price_cell=btc_price)
 
     def run_(self, new_row):
         self.df_raw.loc[len(self.df_raw.index)] = new_row
