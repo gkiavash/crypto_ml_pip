@@ -9,7 +9,7 @@ setup(
     # Needed to actually package something
     packages=["crypto_ml"],
     # Needed for dependencies
-    install_requires=["numpy", "pandas", "ta", "pytest", "matplotlib", "scipy"],
+    install_requires=["numpy", "pandas", "ta", "pytest", "matplotlib", "scipy", "scikit-learn"],
     version="0.1",
     description="few util methods for crypto datasets",
 )
