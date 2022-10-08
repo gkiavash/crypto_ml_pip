@@ -1,15 +1,24 @@
-from crypto_ml import utils
+from crypto_ml import utils, indicators
 import crypto_ml
 
 
 class TestStrategy:
     def __init__(self,
+                 df_raw,
+                 scaler=None,
+                 model=None,
                  wallet_usdt=1000,
                  wallet_btc=0,
                  rate_fee_transaction=0.001,
                  rate_stop_limit=-0.001,
                  rate_sell_profit=0.004,
                  ):
+        self.df_raw = df_raw
+        if len(self.df_raw) > 200:
+            self.df_raw = self.df_raw[-200:]
+
+        self.scaler = scaler,
+        self.model = model,
 
         self.wallet_usdt = wallet_usdt
         self.wallet_btc = wallet_btc
@@ -62,3 +71,18 @@ class TestStrategy:
             if y_ == 1:
                 self.btc_buy(btc_price=btc_prices[index])
             self.positions_check(btc_price=btc_prices[index])
+
+    def run_(self, new_row):
+        self.df_raw.loc[len(self.df_raw.index)] = new_row
+        self.df_indicator = self.df_raw.copy(deep=True)
+
+        self.df_indicator = indicators.prepare_dataset(self.df_indicator)
+        print(self.df_indicator.head())
+
+        X_strategy = self.df_indicator.values[-3:]
+        X_strategy.astype('float64')
+
+        X_strategy = self.scaler.fit_transform(X_strategy)
+
+        y_hat_strategy = self.model.predict(X_strategy)
+        return y_hat_strategy

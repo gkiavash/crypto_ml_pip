@@ -1,5 +1,6 @@
 import logging
 import pandas as pd
+import matplotlib.pyplot as plt
 
 from ta.utils import dropna
 from ta.volatility import BollingerBands
@@ -211,4 +212,63 @@ def add_indicators_cs2(df, col_names):
     df = add_indicators_PSARIndicator(df, col_names)
     df = add_indicators_hour_percent_profit(df, col_names)
     # df = add_indicators_candle(df, col_names)
+    return df
+
+
+def prepare_dataset(df, is_plot=False, is_drop=False):
+    df["open"] = df["open"].rolling(window=11, win_type='gaussian', center=True).mean(std=1)
+    df["close"] = df["close"].rolling(window=11, win_type='gaussian', center=True).mean(std=1)
+    df["high"] = df["high"].rolling(window=11, win_type='gaussian', center=True).mean(std=1)
+    df["low"] = df["low"].rolling(window=11, win_type='gaussian', center=True).mean(std=1)
+
+    df = add_indicators_BollingerBands(df, col_names=crypto_ml.col_names, window=21, window_dev=2,
+                                                  ones_reverse=False)
+    df = add_indicators_RSIIndicator(df, col_names=crypto_ml.col_names, window=6, ones_reverse=False)
+    df = add_indicators_EMAIndicator(df, col_names=crypto_ml.col_names, w1=7, w2=25, w3=99, extra="binary")
+    df = add_indicators_MACDIndcator(df, col_names=crypto_ml.col_names, window_slow=26, window_fast=12,
+                                                window_sign=9)
+    df = add_indicators_PSARIndicator(df, col_names=crypto_ml.col_names)
+    df = add_indicators_hour_percent_profit(df, col_names=crypto_ml.col_names)
+
+    df["open_smooth"] = df["open"].rolling(window=15, win_type='gaussian', center=True).mean(std=1)
+    if is_plot:
+        df["open"][0:200].plot()
+        df["open_smooth"][0:200].plot()
+        plt.show()
+
+    df["rsi_6_smooth"] = df["rsi_6_"].rolling(window=15, win_type='gaussian', center=True).mean(std=1)
+    if is_plot:
+        df["rsi_6_"][0:200].plot()
+        df["rsi_6_smooth"][0:200].plot()
+        plt.show()
+
+    df["bb_bbp_smooth"] = df["bb_bbp"].rolling(window=15, win_type='gaussian', center=True).mean(std=1)
+    if is_plot:
+        df["bb_bbp"][0:200].plot()
+        df["bb_bbp_smooth"][0:200].plot()
+        plt.show()
+
+    df["hour_percent_profit_smooth"] = df["hour_percent_profit"].rolling(window=15, win_type='gaussian',
+                                                                         center=True).mean(std=1)
+    if is_plot:
+        df["hour_percent_profit"][0:200].plot()
+        df["hour_percent_profit_smooth"][0:200].plot()
+        plt.show()
+
+    if is_plot:
+        print(df.head(50))
+        df["hour_percent_profit"].plot()
+        plt.show()
+        df["rsi_6_"].plot()
+        plt.show()
+        df["bb_bbp"].plot()
+        plt.show()
+
+    if is_drop:
+        df.dropna(inplace=True)
+        drop_cols = ["unix", "open", "high", "low", "close", "volume",
+                     "num_of_trades", "symbol",
+                     "rsi_6_", "bb_bbp",
+                     "hour_percent_profit", "open_smooth", ]
+        df.drop(drop_cols, axis=1, inplace=True, errors='ignore')
     return df
