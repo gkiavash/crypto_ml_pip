@@ -4,9 +4,12 @@ from sklearn import preprocessing
 
 from crypto_ml import utils, indicators
 
-df_test_path = "tests/BTCUSDT_15m_1 Oct, 2022_9 Oct, 2022.csv"
-df_test = pd.read_csv(df_test_path, header=0, delimiter=",")
-df_test.set_index("unix")
+try:
+    df_test_path = "tests/BTCUSDT_15m_1 Oct, 2022_9 Oct, 2022.csv"
+    df_test = pd.read_csv(df_test_path, header=0, delimiter=",")
+    df_test.set_index("unix")
+except FileNotFoundError as e:
+    pass
 
 
 class TestStrategy:
