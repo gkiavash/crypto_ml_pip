@@ -176,3 +176,17 @@ def confusion_matrix(y_test_classes, y_hat_classes):
     print("false_pos", false_pos)
     print("false_neg", false_neg)
     return true_pos, true_neg, false_pos, false_neg
+
+
+def get_y_prob(y_hat, prob_thresh=0.):
+    y_prob = []
+    for y_i in y_hat:
+        y_prob.append(y_i[1] / (y_i[0] + y_i[1]))
+
+    y_prob = np.array(y_prob)
+    # print("y_prob", y_prob)
+    # print((y_prob > prob_thresh).sum())
+    # print(y_prob[ np.where( y_prob >= prob_thresh ) ])
+    y_hat_class = y_hat[np.where(y_prob > prob_thresh)].argmax(axis=-1)
+
+    return y_prob, y_hat_class

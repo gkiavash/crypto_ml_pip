@@ -18,6 +18,7 @@ class TestStrategy:
                  scaler=None,
                  model=None,
                  prob=0.5,
+                 prob_1=0.7,
                  n_past=4,
                  btc_qty=0.001,
                  wallet_usdt=1000,
@@ -37,6 +38,8 @@ class TestStrategy:
 
         self.model = model
         self.prob = prob
+        self.prob_1 = prob_1
+
         self.n_past = n_past
 
         self.btc_qty = btc_qty
@@ -72,7 +75,7 @@ class TestStrategy:
         position["btc_price_cell"] = btc_price_cell
 
         self.current_state.append(position["btc_price"] < position['btc_price_cell'])
-        if len(self.current_state) > 3:
+        if len(self.current_state) >= 3:
             self.current_state.pop(0)
         print(f'Sold {btc_qty} BTC with price {btc_price_cell}')
 
@@ -82,11 +85,21 @@ class TestStrategy:
                 continue
             if utils.percent_calc(btc_price, position['btc_price']) >= self.rate_sell_profit:
                 self.btc_sell(position, btc_price_cell=btc_price)
+
             elif utils.percent_calc(btc_price, position['btc_price']) < (self.rate_stop_limit - 2 * self.rate_fee_transaction):
                 self.btc_sell(
                     position,
                     btc_price_cell=position["btc_price"]*(1+self.rate_stop_limit)
                 )
+
+    def to_buy_from_current_state(self):
+        """
+        If losing money, don't buy for a while.
+        """
+        if len(self.current_state) == 3 and not any(self.current_state):
+            return False
+        self.current_state.pop(0) if len(self.current_state) > 0 else None
+        return True
 
     def run_(self, new_row, to_buy=True):
         self.df_raw.loc[len(self.df_raw.index)] = new_row
@@ -112,11 +125,12 @@ class TestStrategy:
         btc_price = self.df_raw.iloc[-1]["close"]
         # if y_hat_strategy_classes[0] == 1:
         if to_buy:  # End of test dataset
-            if any(self.current_state) or len(self.current_state) == 0:  # not buy if a lot of loss
-                if y_prob_strategy > self.prob and y_hat_strategy[0][1] > 0.7:
+            if y_prob_strategy > self.prob and y_hat_strategy[0][1] > self.prob_1:
+                if self.to_buy_from_current_state():
                     self.btc_buy(btc_price=btc_price, btc_qty=self.btc_qty)
-                    self.current_state.pop(0) if len(self.current_state) > 0 else None
+                self.current_state.pop(0) if len(self.current_state) > 0 else None
 
-        self.positions_check(btc_price=btc_price)
+        self.positions_check(btc_price=self.df_raw.iloc[-1]["high"])
 
         return y_hat_strategy, y_hat_strategy_classes
+
