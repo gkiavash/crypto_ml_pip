@@ -51,4 +51,4 @@ def test_signal_buy():
         lower_bound=False,
     )
     # print(df)
-    assert (df["signal_buy"].tolist()) == [1, 0, 1, 1, 0, 1, 1, 0]
+    assert (df["signal_buy"].tolist()) == [1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0]

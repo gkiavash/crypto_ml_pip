@@ -4,29 +4,17 @@ from sklearn import preprocessing
 
 from crypto_ml import utils, indicators
 
-try:
-    df_test_path = "tests/BTCUSDT_15m_1 Oct, 2022_9 Oct, 2022.csv"
-    df_test = pd.read_csv(df_test_path, header=0, delimiter=",")
-    df_test.set_index("unix")
-except FileNotFoundError as e:
-    pass
 
-
-class TestStrategy:
+class BaseStrategy:
     def __init__(
         self,
         df_raw,
         scaler=None,
         model=None,
-        prob=0.5,
-        prob_1=0.7,
         n_past=4,
-        btc_qty=0.001,
-        wallet_usdt=1000,
-        wallet_btc=0,
-        rate_fee_transaction=0.001,
-        rate_stop_limit=-0.001,
-        rate_sell_profit=0.006,
+        btc_qty_static=0.001,
+        rate_stop_limit=-0.006,
+        rate_sell_profit=0.01,
     ):
         self.df_raw = df_raw
         if len(self.df_raw) > 200:
@@ -38,18 +26,61 @@ class TestStrategy:
             self.scaler = preprocessing.MinMaxScaler()
 
         self.model = model
-        self.prob = prob
-        self.prob_1 = prob_1
 
         self.n_past = n_past
 
-        self.btc_qty = btc_qty
-        self.wallet_usdt = wallet_usdt
-        self.wallet_btc = wallet_btc
-        self.rate_fee_transaction = rate_fee_transaction
+        self.btc_qty_static = btc_qty_static
         self.rate_stop_limit = rate_stop_limit
         self.rate_sell_profit = rate_sell_profit
 
+    @property
+    def prob(self):
+        return 0.5
+
+    @property
+    def prob_1(self):
+        return 0.7
+
+    @property
+    def btc_qty(self):
+        return self.btc_qty_static
+
+    def btc_buy(self, btc_price: float, btc_qty: float):
+        raise NotImplementedError
+
+    def btc_sell(self, position: dict, btc_price_cell: float):
+        raise NotImplementedError
+
+    def run_(self, new_row, to_buy=True):
+        """
+        :param new_row: new candle
+        :param to_buy: logic to buy from outside of the module
+        :return: None
+        """
+        raise NotImplementedError
+
+    def prepare_dataset_to_predict(self, new_row):
+        self.df_raw.loc[len(self.df_raw.index)] = new_row
+        self.df_indicator = self.df_raw.copy(deep=True)
+
+        self.df_indicator = indicators.prepare_dataset(self.df_indicator, is_drop=True)
+
+        X_strategy = self.df_indicator.values[-self.n_past :]
+        X_strategy.astype("float64")
+
+        X_strategy = self.scaler.fit_transform(X_strategy)
+        X_strategy = np.array([X_strategy])
+        return X_strategy
+
+
+class TestStrategy(BaseStrategy):
+    def __init__(
+        self, wallet_usdt=1000, wallet_btc=0, rate_fee_transaction=0.001, **kwargs
+    ):
+        super().__init__(**kwargs)
+        self.wallet_usdt = wallet_usdt
+        self.wallet_btc = wallet_btc
+        self.rate_fee_transaction = rate_fee_transaction
         self.positions = []
         self.current_state = []
 
@@ -108,16 +139,7 @@ class TestStrategy:
         return True
 
     def run_(self, new_row, to_buy=True):
-        self.df_raw.loc[len(self.df_raw.index)] = new_row
-        self.df_indicator = self.df_raw.copy(deep=True)
-
-        self.df_indicator = indicators.prepare_dataset(self.df_indicator, is_drop=True)
-
-        X_strategy = self.df_indicator.values[-self.n_past :]
-        X_strategy.astype("float64")
-
-        X_strategy = self.scaler.fit_transform(X_strategy)
-        X_strategy = np.array([X_strategy])
+        X_strategy = self.prepare_dataset_to_predict(new_row)
 
         if self.model:
             y_hat_strategy = self.model.predict(X_strategy)
