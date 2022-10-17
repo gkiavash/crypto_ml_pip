@@ -31,6 +31,7 @@ def test_split_series():
 def test_split_series_unix():
     from crypto_ml.utils import split_series
     import pandas as pd
+
     df = pd.read_csv("tests/test.csv", header=0, delimiter=",")
     print(df.values)
     x, y = split_series(df.values, n_past=3, n_future=1, col_output=None)
@@ -47,7 +48,7 @@ def test_signal_buy():
         max_minutes_later=5,
         min_percent_profit=0.006,
         col_names=crypto_ml.col_names,
-        lower_bound=False
+        lower_bound=False,
     )
     # print(df)
-    assert (df['signal_buy'].tolist()) == [1, 0, 1, 1, 0, 1, 1, 0]
+    assert (df["signal_buy"].tolist()) == [1, 0, 1, 1, 0, 1, 1, 0]

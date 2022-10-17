@@ -106,42 +106,64 @@ def signal_buy(
     # if need_reverse:
     #     df = df[::-1].reset_index()
 
-    col_close = col_names['close']
-    col_high = col_names['high']
+    col_close = col_names["close"]
+    col_high = col_names["high"]
 
-    col_names_max = ['{}_{}'.format(col_names['high'], shift) for shift in range(1, max_minutes_later + 1)]
+    col_names_max = [
+        "{}_{}".format(col_names["high"], shift)
+        for shift in range(1, max_minutes_later + 1)
+    ]
     for shift in range(1, max_minutes_later + 1):
-        df['{}_{}'.format(col_high, shift)] = df[col_high].shift(-shift)
-    print('Done: shift')
+        df["{}_{}".format(col_high, shift)] = df[col_high].shift(-shift)
+    print("Done: shift")
 
-    df['percent_max_future_rows'] = df.apply(
-        lambda row: round((row[col_names_max].max() - row[col_close]) / row[col_close], 4),
-        axis=1
+    df["percent_max_future_rows"] = df.apply(
+        lambda row: round(
+            (row[col_names_max].max() - row[col_close]) / row[col_close], 4
+        ),
+        axis=1,
     ).round(4)
-    print('Done: percent_max_future_rows')
+    print("Done: percent_max_future_rows")
 
     if lower_bound:
-        print('lower_bound: True')
-        col_names_min = ['{}_{}'.format(col_names['low'], shift) for shift in range(1, max_minutes_later + 1)]
+        print("lower_bound: True")
+        col_names_min = [
+            "{}_{}".format(col_names["low"], shift)
+            for shift in range(1, max_minutes_later + 1)
+        ]
         for shift in range(1, max_minutes_later + 1):
-            df['{}_{}'.format(col_names['low'], shift)] = df[col_names['low']].shift(-shift)
-        print('Done: shift lower_bound')
+            df["{}_{}".format(col_names["low"], shift)] = df[col_names["low"]].shift(
+                -shift
+            )
+        print("Done: shift lower_bound")
 
-        df['percent_min_future_rows'] = df.apply(
-            lambda row: round((row[col_names_min].min() - row[col_close]) / row[col_close], 4), axis=1).round(4)
-        print('Done: percent_min_future_rows lower_bound')
+        df["percent_min_future_rows"] = df.apply(
+            lambda row: round(
+                (row[col_names_min].min() - row[col_close]) / row[col_close], 4
+            ),
+            axis=1,
+        ).round(4)
+        print("Done: percent_min_future_rows lower_bound")
 
-        df['signal_buy'] = df.apply(
-            lambda row: 1 if row['percent_max_future_rows'] > min_percent_profit and
-                             row['percent_min_future_rows'] > (-min_percent_profit+0.002) else 0, axis=1,
+        df["signal_buy"] = df.apply(
+            lambda row: 1
+            if row["percent_max_future_rows"] > min_percent_profit
+            and row["percent_min_future_rows"] > (-min_percent_profit + 0.002)
+            else 0,
+            axis=1,
         )
-        print('Done: signal_buy with lower bound')
-        col_names_max += col_names_min + ['percent_min_future_rows']
+        print("Done: signal_buy with lower bound")
+        col_names_max += col_names_min + ["percent_min_future_rows"]
     else:
-        df['signal_buy'] = df.apply(lambda row: 1 if row['percent_max_future_rows'] > min_percent_profit else 0, axis=1,)
-        print('Done: signal_buy without lower bound')
+        df["signal_buy"] = df.apply(
+            lambda row: 1 if row["percent_max_future_rows"] > min_percent_profit else 0,
+            axis=1,
+        )
+        print("Done: signal_buy without lower bound")
 
-    col_names_max += ['percent_max_future_rows',]
+    col_names_max += [
+        "percent_max_future_rows",
+    ]
 
     # if need_reverse:
     #     col_names_max += ['index']
@@ -150,7 +172,7 @@ def signal_buy(
 
     print(df.head())
     print(df.columns.tolist())
-    print(df.groupby(['signal_buy']).count())
+    print(df.groupby(["signal_buy"]).count())
 
     return df
 
@@ -178,7 +200,7 @@ def confusion_matrix(y_test_classes, y_hat_classes):
     return true_pos, true_neg, false_pos, false_neg
 
 
-def get_y_prob(y_hat, prob_thresh=0.):
+def get_y_prob(y_hat, prob_thresh=0.0):
     y_prob = []
     for y_i in y_hat:
         y_prob.append(y_i[1] / (y_i[0] + y_i[1]))

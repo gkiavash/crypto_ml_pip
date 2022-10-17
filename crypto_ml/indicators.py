@@ -11,7 +11,12 @@ import crypto_ml
 
 
 def add_indicators_BollingerBands(
-    df, col_names=crypto_ml.col_names, window=21, window_dev=2, ones_reverse=False, is_plot=False
+    df,
+    col_names=crypto_ml.col_names,
+    window=21,
+    window_dev=2,
+    ones_reverse=False,
+    is_plot=False,
 ):
     indicator_bb = BollingerBands(
         close=df[col_names["close"]], window=window, window_dev=window_dev
@@ -42,7 +47,9 @@ def add_indicators_BollingerBands(
     return df
 
 
-def add_indicators_RSIIndicator(df, col_names=crypto_ml.col_names, window=6, ones_reverse=False, is_plot=False):
+def add_indicators_RSIIndicator(
+    df, col_names=crypto_ml.col_names, window=6, ones_reverse=False, is_plot=False
+):
     df["rsi_{}_".format(window)] = (
         RSIIndicator(close=df[col_names["close"]], window=window).rsi().round(2)
     )
@@ -57,7 +64,9 @@ def add_indicators_RSIIndicator(df, col_names=crypto_ml.col_names, window=6, one
     return df
 
 
-def add_indicators_EMAIndicator(df, col_names=crypto_ml.col_names, w1=7, w2=25, w3=99, extra=None, is_plot=False):
+def add_indicators_EMAIndicator(
+    df, col_names=crypto_ml.col_names, w1=7, w2=25, w3=99, extra=None, is_plot=False
+):
     df["ema_{}_".format(w1)] = (
         EMAIndicator(close=df[col_names["close"]], window=w1).ema_indicator().round(2)
     )
@@ -114,7 +123,12 @@ def add_indicators_EMAIndicator(df, col_names=crypto_ml.col_names, w1=7, w2=25, 
 
 
 def add_indicators_MACDIndcator(
-    df, col_names=crypto_ml.col_names, window_slow=26, window_fast=12, window_sign=9, is_plot=False
+    df,
+    col_names=crypto_ml.col_names,
+    window_slow=26,
+    window_fast=12,
+    window_sign=9,
+    is_plot=False,
 ):
     MACDIndcator = MACD(
         close=df[col_names["close"]],
@@ -152,7 +166,9 @@ def add_indicators_PSARIndicator(df, col_names=crypto_ml.col_names, is_plot=Fals
     return df
 
 
-def add_indicators_hour_percent_profit(df, col_names=crypto_ml.col_names, is_plot=False):
+def add_indicators_hour_percent_profit(
+    df, col_names=crypto_ml.col_names, is_plot=False
+):
     df["hour_percent_profit"] = df.apply(
         lambda row: (row[col_names["close"]] - row[col_names["open"]])
         / row[col_names["open"]],
@@ -223,10 +239,18 @@ def add_indicators_cs2(df, col_names):
 
 
 def prepare_dataset(df, is_plot=False, is_drop=False):
-    df["open"] = df["open"].rolling(window=11, win_type='gaussian', center=True).mean(std=1)
-    df["close"] = df["close"].rolling(window=11, win_type='gaussian', center=True).mean(std=1)
-    df["high"] = df["high"].rolling(window=11, win_type='gaussian', center=True).mean(std=1)
-    df["low"] = df["low"].rolling(window=11, win_type='gaussian', center=True).mean(std=1)
+    df["open"] = (
+        df["open"].rolling(window=11, win_type="gaussian", center=True).mean(std=1)
+    )
+    df["close"] = (
+        df["close"].rolling(window=11, win_type="gaussian", center=True).mean(std=1)
+    )
+    df["high"] = (
+        df["high"].rolling(window=11, win_type="gaussian", center=True).mean(std=1)
+    )
+    df["low"] = (
+        df["low"].rolling(window=11, win_type="gaussian", center=True).mean(std=1)
+    )
 
     df = add_indicators_BollingerBands(df, window=21, window_dev=2, ones_reverse=False)
     df = add_indicators_RSIIndicator(df, window=6, ones_reverse=False)
@@ -235,26 +259,35 @@ def prepare_dataset(df, is_plot=False, is_drop=False):
     df = add_indicators_PSARIndicator(df)
     df = add_indicators_hour_percent_profit(df)
 
-    df["open_smooth"] = df["open"].rolling(window=15, win_type='gaussian', center=True).mean(std=1)
+    df["open_smooth"] = (
+        df["open"].rolling(window=15, win_type="gaussian", center=True).mean(std=1)
+    )
     if is_plot:
         df["open"][0:200].plot()
         df["open_smooth"][0:200].plot()
         plt.show()
 
-    df["rsi_6_smooth"] = df["rsi_6_"].rolling(window=15, win_type='gaussian', center=True).mean(std=1)
+    df["rsi_6_smooth"] = (
+        df["rsi_6_"].rolling(window=15, win_type="gaussian", center=True).mean(std=1)
+    )
     if is_plot:
         df["rsi_6_"][0:200].plot()
         df["rsi_6_smooth"][0:200].plot()
         plt.show()
 
-    df["bb_bbp_smooth"] = df["bb_bbp"].rolling(window=15, win_type='gaussian', center=True).mean(std=1)
+    df["bb_bbp_smooth"] = (
+        df["bb_bbp"].rolling(window=15, win_type="gaussian", center=True).mean(std=1)
+    )
     if is_plot:
         df["bb_bbp"][0:200].plot()
         df["bb_bbp_smooth"][0:200].plot()
         plt.show()
 
-    df["hour_percent_profit_smooth"] = df["hour_percent_profit"].rolling(window=15, win_type='gaussian',
-                                                                         center=True).mean(std=1)
+    df["hour_percent_profit_smooth"] = (
+        df["hour_percent_profit"]
+        .rolling(window=15, win_type="gaussian", center=True)
+        .mean(std=1)
+    )
     if is_plot:
         df["hour_percent_profit"][0:200].plot()
         df["hour_percent_profit_smooth"][0:200].plot()
@@ -271,9 +304,19 @@ def prepare_dataset(df, is_plot=False, is_drop=False):
 
     if is_drop:
         df.dropna(inplace=True)
-        drop_cols = ["unix", "open", "high", "low", "close", "volume",
-                     "num_of_trades", "symbol",
-                     "rsi_6_", "bb_bbp",
-                     "hour_percent_profit", "open_smooth", ]
-        df.drop(drop_cols, axis=1, inplace=True, errors='ignore')
+        drop_cols = [
+            "unix",
+            "open",
+            "high",
+            "low",
+            "close",
+            "volume",
+            "num_of_trades",
+            "symbol",
+            "rsi_6_",
+            "bb_bbp",
+            "hour_percent_profit",
+            "open_smooth",
+        ]
+        df.drop(drop_cols, axis=1, inplace=True, errors="ignore")
     return df
