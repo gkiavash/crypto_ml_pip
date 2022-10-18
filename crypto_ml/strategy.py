@@ -4,6 +4,10 @@ from sklearn import preprocessing
 
 from crypto_ml import utils, indicators
 
+from binance import Client
+import pandas as pd
+import datetime
+
 
 class BaseStrategy:
     def __init__(
@@ -163,3 +167,73 @@ class TestStrategy(BaseStrategy):
         self.positions_check(btc_price=self.df_raw.iloc[-1]["high"])
 
         return y_hat_strategy, y_hat_strategy_classes
+
+
+class BinanceStrategy(BaseStrategy):
+    def __init__(
+        self, wallet_usdt=1000, wallet_btc=0, rate_fee_transaction=0.001, **kwargs
+    ):
+        super().__init__(**kwargs)
+        self.database = None
+        self.wallet_usdt = wallet_usdt
+        self.wallet_btc = wallet_btc
+        self.rate_fee_transaction = rate_fee_transaction
+        self.positions = []
+        self.current_state = []
+        self.init_session()
+        self.init_database()
+        self.client = []
+
+    def init_database(self, filename="TradeLog.csv"):
+        """
+        check if already dataframe is defined otherwise create new
+        [order id,result [Pos/neg], %, amount of profit, status [Finish- ongoing], qty, buy_price, buy_date,
+         sell_price, sell_date]
+        """
+        self.database = pd.DataFrame(columns=["result", "%", "profit", "status", "qty", "buy_price",
+                                              "buy_date", "buy_order_id", "sell_price", "sell_date", "sell_order_id"])
+
+    def init_session(self):
+        """
+        Initialize communication among user and binance server
+        """
+        api_asal = "xx"
+        secret_asal = "yy"
+        self.client = Client(api_asal, secret_asal, {"verify": True, "timeout": 40})
+        self.client.get_account()
+
+    def btc_trade(self, symbol, btc_price, btc_qty=0.0001):
+        """
+        buy order exe
+        including sell order req
+        """
+        if (self.wallet_usdt - btc_qty * btc_price) < 0:
+            raise Exception("Not enough USDT")
+        self.wallet_usdt -= btc_qty * btc_price
+        self.wallet_btc += (1 - self.rate_fee_transaction) * btc_qty
+        # Todo: buy order with price
+        buy_order = self.client.create_order(symbol=symbol,
+                                         side='BUY',
+                                         type='MARKET',
+                                         quantity=btc_qty)
+        order = self.client.get_order(symbol=symbol, orderId=buy_order['orderId'])
+        # todo: how long we need to wait?
+        if order['status'] == 'FILLED':
+
+            # todo: Sell Order by price
+            sell_order = self.client.create_order(symbol=symbol, side='SELL', type='MARKET', quantity=btc_qty)
+
+            # update database
+            self.database.loc[self.database.shape[0] + 1] = ["None",
+                                                             "None",
+                                                             "None",
+                                                             "Ongoing",
+                                                             btc_qty,
+                                                             btc_price,
+                                                             datetime.now(),
+                                                             buy_order['orderId'],
+                                                             "None",
+                                                             "None",
+                                                             sell_order['orderId']]
+            print(f" Bought {btc_qty} BTC with price {btc_price}")
+
