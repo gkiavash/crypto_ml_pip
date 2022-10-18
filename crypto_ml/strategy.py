@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from sklearn import preprocessing
+from sklearn import preprocessing, exceptions as sk_exceptions
 
 from crypto_ml import utils, indicators
 
@@ -24,7 +24,6 @@ class BaseStrategy:
             self.scaler = scaler
         else:
             self.scaler = preprocessing.MinMaxScaler()
-            self.scaler.fit(self.df_raw)
 
         self.model = model
 
@@ -61,7 +60,7 @@ class BaseStrategy:
         raise NotImplementedError
 
     def prepare_dataset_to_predict(self, new_row):
-        self.df_raw.loc[len(self.df_raw.index)] = new_row
+        self.df_raw.loc[len(self.df_raw.index)] = new_row  # add to the end of df
         self.df_indicator = self.df_raw.copy(deep=True)
 
         self.df_indicator = indicators.prepare_dataset(self.df_indicator, is_drop=True)
@@ -69,7 +68,11 @@ class BaseStrategy:
         X_strategy = self.df_indicator.values[-self.n_past:]
         X_strategy.astype("float64")
 
-        X_strategy = self.scaler.transform(X_strategy)
+        try:
+            X_strategy = self.scaler.transform(X_strategy)
+        except sk_exceptions.NotFittedError:
+            X_strategy = self.scaler.fit_transform(X_strategy)
+
         X_strategy = np.array([X_strategy])
         return X_strategy
 
@@ -110,7 +113,11 @@ class TestStrategy(BaseStrategy):
         self.current_state.append(position["btc_price"] < position["btc_price_cell"])
         if len(self.current_state) >= 3:
             self.current_state.pop(0)
-        print(f"Sold {btc_qty} BTC with price {btc_price_cell}")
+        print(
+            f"Sold {btc_qty} BTC with price {btc_price_cell}",
+            "profit/loss: ",
+            round((position['btc_price_cell']/position["btc_price"])-1, 3)
+        )
 
     def positions_check(self, btc_price):
         for index, position in enumerate(self.positions):
@@ -130,6 +137,25 @@ class TestStrategy(BaseStrategy):
                     btc_price_cell=position["btc_price"] * (1 + self.rate_stop_limit),
                 )
 
+    def positions_status(self):
+        n_profit = 0
+        n_loss = 0
+        n_not_sold = 0
+        for i in self.positions:
+            if "btc_price_cell" in i:
+                if i["btc_price"] < i['btc_price_cell']:
+                    n_profit += 1
+                else:
+                    n_loss += 1
+            else:
+                n_not_sold += 1
+        print(
+            "num of all poses:", len(self.positions),
+            "num of all profits:", n_profit,
+            "num of all losses:", n_loss,
+            "num of all waiting:", n_not_sold
+        )
+
     def to_buy_from_current_state(self):
         """
         If losing money, don't buy for a while.
@@ -145,6 +171,7 @@ class TestStrategy(BaseStrategy):
         if self.model:
             y_hat_strategy = self.model.predict(X_strategy)
         else:
+            # For test purpose
             y_hat_strategy = np.array([[0, 1]])
 
         y_hat_strategy_classes = y_hat_strategy.argmax(axis=-1)
@@ -157,6 +184,31 @@ class TestStrategy(BaseStrategy):
         # if y_hat_strategy_classes[0] == 1:
         if to_buy:  # End of test dataset
             if y_prob_strategy > self.prob and y_hat_strategy[0][1] > self.prob_1:
+                if self.to_buy_from_current_state():
+                    self.btc_buy(btc_price=btc_price, btc_qty=self.btc_qty)
+                self.current_state.pop(0) if len(self.current_state) > 0 else None
+
+        self.positions_check(btc_price=self.df_raw.iloc[-1]["high"])
+
+        return y_hat_strategy, y_hat_strategy_classes
+
+
+class RandomForestTestStrategy(TestStrategy):
+    def prepare_dataset_to_predict(self, new_row):
+        X_strategy = super().prepare_dataset_to_predict(new_row)
+        return np.array([X_strategy[-1][-1]])
+
+    def run_(self, new_row, to_buy=True):
+        X_strategy = self.prepare_dataset_to_predict(new_row)
+
+        y_hat_strategy = self.model.predict(X_strategy)
+        print(y_hat_strategy.shape, y_hat_strategy)
+        y_hat_strategy_classes = y_hat_strategy[0]
+
+        btc_price = self.df_raw.iloc[-1]["close"]
+        # if y_hat_strategy_classes[0] == 1:
+        if to_buy:  # End of test dataset
+            if y_hat_strategy_classes:
                 if self.to_buy_from_current_state():
                     self.btc_buy(btc_price=btc_price, btc_qty=self.btc_qty)
                 self.current_state.pop(0) if len(self.current_state) > 0 else None
