@@ -1,3 +1,5 @@
+import os.path
+
 import numpy as np
 
 import crypto_ml
@@ -52,3 +54,18 @@ def test_signal_buy():
     )
     # print(df)
     assert (df["signal_buy"].tolist()) == [1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0]
+
+
+def test_combined():
+    row_start = 20
+
+    BASE_PATH = "E:\Projects\crypto_ml\datasets"
+    df_smaller = pd.read_csv(os.path.join(BASE_PATH, "EGLDUSDT_5m_1 Jan, 2022_30 Sep, 2022.csv"), header=0, delimiter=",")
+    df_bigger = pd.read_csv(os.path.join(BASE_PATH, "EGLDUSDT_15m_1 Jan, 2022_30 Sep, 2022.csv"), header=0, delimiter=",")
+
+    df_smaller = df_smaller[:row_start]
+    df_bigger = df_bigger[:row_start]
+
+    df = combine(df_smaller, df_bigger, ["open"])
+    print(df.head(25))
+    print(df.values)

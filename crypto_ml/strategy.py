@@ -24,6 +24,7 @@ class BaseStrategy:
             self.scaler = scaler
         else:
             self.scaler = preprocessing.MinMaxScaler()
+            self.scaler.fit(self.df_raw)
 
         self.model = model
 
@@ -65,10 +66,10 @@ class BaseStrategy:
 
         self.df_indicator = indicators.prepare_dataset(self.df_indicator, is_drop=True)
 
-        X_strategy = self.df_indicator.values[-self.n_past :]
+        X_strategy = self.df_indicator.values[-self.n_past:]
         X_strategy.astype("float64")
 
-        X_strategy = self.scaler.fit_transform(X_strategy)
+        X_strategy = self.scaler.transform(X_strategy)
         X_strategy = np.array([X_strategy])
         return X_strategy
 

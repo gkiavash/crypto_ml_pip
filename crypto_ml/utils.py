@@ -65,12 +65,13 @@ def split_sequence(sequence, n_steps_in, n_steps_out):
     return np.array(X), np.array(y)
 
 
-def split_series(series, n_past, n_future, col_output=None):
+def split_series(series, n_past, n_future, col_output=None, remove_col_output_from_input=True):
     """
     :param series: dataset
     :param n_past: number of input steps, e.g. 3: consider 3 previous hours
     :param n_future: number of output steps, e.g. 1: next 1 hours
     :param col_output: index of output column(s) must be iterable. If None then the whole row
+    :param remove_col_output_from_input: remove output column from input
     :return: x, y. output for example above:
 
     x:              y:
@@ -91,6 +92,13 @@ def split_series(series, n_past, n_future, col_output=None):
             break
         # slicing the past and future parts of the window
         past, future = series[window_start:past_end, :], series[past_end:future_end, :]
+
+        if col_output and remove_col_output_from_input:
+            past_new = []
+            for p in past:
+                past_new.append(np.delete(p, col_output))
+            past = np.array(past_new)
+
         X.append(past)
         y.append(future[:, col_output] if col_output is not None else future)
     return np.array(X), np.array(y)
@@ -212,3 +220,21 @@ def get_y_prob(y_hat, prob_thresh=0.0):
     y_hat_class = y_hat[np.where(y_prob > prob_thresh)].argmax(axis=-1)
 
     return y_prob, y_hat_class
+
+
+def combine(df_smaller_interval, df_bigger_interval, needed_cols):
+    df_smaller_interval.set_index('unix', inplace=True)
+    df_bigger_interval.set_index('unix', inplace=True)
+
+    # needed_cols = ['bb_bbp', 'rsi_6_']
+    needed_cols_new = {i: f'{i}_combined' for i in needed_cols}
+    df_bigger_interval = df_bigger_interval[needed_cols]
+    df_bigger_interval.rename(needed_cols_new, axis=1, inplace=True)
+
+    df = pd.concat([df_smaller_interval, df_bigger_interval], axis=1)
+
+    # for i in needed_cols_new.keys():
+    #     df[f'{i}_*_{needed_cols_new[i]}'] = (df[i]*df[needed_cols_new[i]]).round(3)
+
+    df.fillna(method='ffill', inplace=True)
+    return df
