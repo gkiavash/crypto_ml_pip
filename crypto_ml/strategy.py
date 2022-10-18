@@ -216,3 +216,19 @@ class RandomForestTestStrategy(TestStrategy):
         self.positions_check(btc_price=self.df_raw.iloc[-1]["high"])
 
         return y_hat_strategy, y_hat_strategy_classes
+
+    def test_model(self, df_strategy_complete):
+        """
+        Before running strategy. Let's see the signals in all the dataframe ato nce
+        :param df_strategy_complete: df to be sent to self.run_() one row by one row
+        :return:
+        """
+        df_complete = indicators.prepare_dataset(df_strategy_complete, is_drop=True)
+        X_rf = df_complete.values
+        X_rf.astype('float64')
+
+        scaler_rf = preprocessing.MinMaxScaler()
+        X_rf = scaler_rf.fit_transform(X_rf)
+
+        y_pred_rf = self.model.predict(X_rf)
+        return y_pred_rf
